@@ -137,7 +137,7 @@ var _logger = require('./logger');
 
 var _logger2 = _interopRequireDefault(_logger);
 
-var VERSION = '4.0.11';
+var VERSION = '4.1.2';
 exports.VERSION = VERSION;
 var COMPILER_REVISION = 7;
 
@@ -603,7 +603,13 @@ exports.__esModule = true;
 
 exports['default'] = function (instance) {
   instance.registerHelper('lookup', function (obj, field) {
-    return obj && obj[field];
+    if (!obj) {
+      return obj;
+    }
+    if (field === 'constructor' && !obj.propertyIsEnumerable(field)) {
+      return undefined;
+    }
+    return obj[field];
   });
 };
 
@@ -1210,6 +1216,9 @@ if (!Array.prototype.find) {
     });
 }
 },{}],22:[function(require,module,exports){
+function n(n){return n=n||Object.create(null),{on:function(c,e){(n[c]||(n[c]=[])).push(e)},off:function(c,e){n[c]&&n[c].splice(n[c].indexOf(e)>>>0,1)},emit:function(c,e){(n[c]||[]).slice().map(function(n){n(e)}),(n["*"]||[]).slice().map(function(n){n(c,e)})}}}module.exports=n;
+
+},{}],23:[function(require,module,exports){
 //! moment.js
 
 ;(function (global, factory) {
@@ -2354,22 +2363,36 @@ if (!Array.prototype.find) {
     function createDate (y, m, d, h, M, s, ms) {
         // can't just apply() to create a date:
         // https://stackoverflow.com/q/181348
-        var date = new Date(y, m, d, h, M, s, ms);
-
+        var date;
         // the date constructor remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0 && isFinite(date.getFullYear())) {
-            date.setFullYear(y);
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            date = new Date(y + 400, m, d, h, M, s, ms);
+            if (isFinite(date.getFullYear())) {
+                date.setFullYear(y);
+            }
+        } else {
+            date = new Date(y, m, d, h, M, s, ms);
         }
+
         return date;
     }
 
     function createUTCDate (y) {
-        var date = new Date(Date.UTC.apply(null, arguments));
-
+        var date;
         // the Date.UTC function remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0 && isFinite(date.getUTCFullYear())) {
-            date.setUTCFullYear(y);
+        if (y < 100 && y >= 0) {
+            var args = Array.prototype.slice.call(arguments);
+            // preserve leap years using a full 400 year cycle, then reset
+            args[0] = y + 400;
+            date = new Date(Date.UTC.apply(null, args));
+            if (isFinite(date.getUTCFullYear())) {
+                date.setUTCFullYear(y);
+            }
+        } else {
+            date = new Date(Date.UTC.apply(null, arguments));
         }
+
         return date;
     }
 
@@ -2471,7 +2494,7 @@ if (!Array.prototype.find) {
 
     var defaultLocaleWeek = {
         dow : 0, // Sunday is the first day of the week.
-        doy : 6  // The week that contains Jan 1st is the first week of the year.
+        doy : 6  // The week that contains Jan 6th is the first week of the year.
     };
 
     function localeFirstDayOfWeek () {
@@ -2580,25 +2603,28 @@ if (!Array.prototype.find) {
     }
 
     // LOCALES
+    function shiftWeekdays (ws, n) {
+        return ws.slice(n, 7).concat(ws.slice(0, n));
+    }
 
     var defaultLocaleWeekdays = 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_');
     function localeWeekdays (m, format) {
-        if (!m) {
-            return isArray(this._weekdays) ? this._weekdays :
-                this._weekdays['standalone'];
-        }
-        return isArray(this._weekdays) ? this._weekdays[m.day()] :
-            this._weekdays[this._weekdays.isFormat.test(format) ? 'format' : 'standalone'][m.day()];
+        var weekdays = isArray(this._weekdays) ? this._weekdays :
+            this._weekdays[(m && m !== true && this._weekdays.isFormat.test(format)) ? 'format' : 'standalone'];
+        return (m === true) ? shiftWeekdays(weekdays, this._week.dow)
+            : (m) ? weekdays[m.day()] : weekdays;
     }
 
     var defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_');
     function localeWeekdaysShort (m) {
-        return (m) ? this._weekdaysShort[m.day()] : this._weekdaysShort;
+        return (m === true) ? shiftWeekdays(this._weekdaysShort, this._week.dow)
+            : (m) ? this._weekdaysShort[m.day()] : this._weekdaysShort;
     }
 
     var defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_');
     function localeWeekdaysMin (m) {
-        return (m) ? this._weekdaysMin[m.day()] : this._weekdaysMin;
+        return (m === true) ? shiftWeekdays(this._weekdaysMin, this._week.dow)
+            : (m) ? this._weekdaysMin[m.day()] : this._weekdaysMin;
     }
 
     function handleStrictParse$1(weekdayName, format, strict) {
@@ -2684,9 +2710,9 @@ if (!Array.prototype.find) {
 
             mom = createUTC([2000, 1]).day(i);
             if (strict && !this._fullWeekdaysParse[i]) {
-                this._fullWeekdaysParse[i] = new RegExp('^' + this.weekdays(mom, '').replace('.', '\.?') + '$', 'i');
-                this._shortWeekdaysParse[i] = new RegExp('^' + this.weekdaysShort(mom, '').replace('.', '\.?') + '$', 'i');
-                this._minWeekdaysParse[i] = new RegExp('^' + this.weekdaysMin(mom, '').replace('.', '\.?') + '$', 'i');
+                this._fullWeekdaysParse[i] = new RegExp('^' + this.weekdays(mom, '').replace('.', '\\.?') + '$', 'i');
+                this._shortWeekdaysParse[i] = new RegExp('^' + this.weekdaysShort(mom, '').replace('.', '\\.?') + '$', 'i');
+                this._minWeekdaysParse[i] = new RegExp('^' + this.weekdaysMin(mom, '').replace('.', '\\.?') + '$', 'i');
             }
             if (!this._weekdaysParse[i]) {
                 regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
@@ -3347,13 +3373,13 @@ if (!Array.prototype.find) {
                     weekdayOverflow = true;
                 }
             } else if (w.e != null) {
-                // local weekday -- counting starts from begining of week
+                // local weekday -- counting starts from beginning of week
                 weekday = w.e + dow;
                 if (w.e < 0 || w.e > 6) {
                     weekdayOverflow = true;
                 }
             } else {
-                // default to begining of week
+                // default to beginning of week
                 weekday = dow;
             }
         }
@@ -3489,7 +3515,7 @@ if (!Array.prototype.find) {
 
     function preprocessRFC2822(s) {
         // Remove comments and folding whitespace and replace multiple-spaces with a single space
-        return s.replace(/\([^)]*\)|[\n\t]/g, ' ').replace(/(\s\s+)/g, ' ').trim();
+        return s.replace(/\([^)]*\)|[\n\t]/g, ' ').replace(/(\s\s+)/g, ' ').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
     }
 
     function checkWeekday(weekdayStr, parsedInput, config) {
@@ -3947,7 +3973,7 @@ if (!Array.prototype.find) {
             years = normalizedInput.year || 0,
             quarters = normalizedInput.quarter || 0,
             months = normalizedInput.month || 0,
-            weeks = normalizedInput.week || 0,
+            weeks = normalizedInput.week || normalizedInput.isoWeek || 0,
             days = normalizedInput.day || 0,
             hours = normalizedInput.hour || 0,
             minutes = normalizedInput.minute || 0,
@@ -4251,7 +4277,7 @@ if (!Array.prototype.find) {
                 ms : toInt(absRound(match[MILLISECOND] * 1000)) * sign // the millisecond decimal point is included in the match
             };
         } else if (!!(match = isoRegex.exec(input))) {
-            sign = (match[1] === '-') ? -1 : (match[1] === '+') ? 1 : 1;
+            sign = (match[1] === '-') ? -1 : 1;
             duration = {
                 y : parseIso(match[2], sign),
                 M : parseIso(match[3], sign),
@@ -4293,7 +4319,7 @@ if (!Array.prototype.find) {
     }
 
     function positiveMomentsDifference(base, other) {
-        var res = {milliseconds: 0, months: 0};
+        var res = {};
 
         res.months = other.month() - base.month() +
             (other.year() - base.year()) * 12;
@@ -4402,7 +4428,7 @@ if (!Array.prototype.find) {
         if (!(this.isValid() && localInput.isValid())) {
             return false;
         }
-        units = normalizeUnits(!isUndefined(units) ? units : 'millisecond');
+        units = normalizeUnits(units) || 'millisecond';
         if (units === 'millisecond') {
             return this.valueOf() > localInput.valueOf();
         } else {
@@ -4415,7 +4441,7 @@ if (!Array.prototype.find) {
         if (!(this.isValid() && localInput.isValid())) {
             return false;
         }
-        units = normalizeUnits(!isUndefined(units) ? units : 'millisecond');
+        units = normalizeUnits(units) || 'millisecond';
         if (units === 'millisecond') {
             return this.valueOf() < localInput.valueOf();
         } else {
@@ -4424,9 +4450,14 @@ if (!Array.prototype.find) {
     }
 
     function isBetween (from, to, units, inclusivity) {
+        var localFrom = isMoment(from) ? from : createLocal(from),
+            localTo = isMoment(to) ? to : createLocal(to);
+        if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
+            return false;
+        }
         inclusivity = inclusivity || '()';
-        return (inclusivity[0] === '(' ? this.isAfter(from, units) : !this.isBefore(from, units)) &&
-            (inclusivity[1] === ')' ? this.isBefore(to, units) : !this.isAfter(to, units));
+        return (inclusivity[0] === '(' ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) &&
+            (inclusivity[1] === ')' ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
     }
 
     function isSame (input, units) {
@@ -4435,7 +4466,7 @@ if (!Array.prototype.find) {
         if (!(this.isValid() && localInput.isValid())) {
             return false;
         }
-        units = normalizeUnits(units || 'millisecond');
+        units = normalizeUnits(units) || 'millisecond';
         if (units === 'millisecond') {
             return this.valueOf() === localInput.valueOf();
         } else {
@@ -4445,11 +4476,11 @@ if (!Array.prototype.find) {
     }
 
     function isSameOrAfter (input, units) {
-        return this.isSame(input, units) || this.isAfter(input,units);
+        return this.isSame(input, units) || this.isAfter(input, units);
     }
 
     function isSameOrBefore (input, units) {
-        return this.isSame(input, units) || this.isBefore(input,units);
+        return this.isSame(input, units) || this.isBefore(input, units);
     }
 
     function diff (input, units, asFloat) {
@@ -4626,62 +4657,130 @@ if (!Array.prototype.find) {
         return this._locale;
     }
 
+    var MS_PER_SECOND = 1000;
+    var MS_PER_MINUTE = 60 * MS_PER_SECOND;
+    var MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    var MS_PER_400_YEARS = (365 * 400 + 97) * 24 * MS_PER_HOUR;
+
+    // actual modulo - handles negative numbers (for dates before 1970):
+    function mod$1(dividend, divisor) {
+        return (dividend % divisor + divisor) % divisor;
+    }
+
+    function localStartOfDate(y, m, d) {
+        // the date constructor remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            return new Date(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+            return new Date(y, m, d).valueOf();
+        }
+    }
+
+    function utcStartOfDate(y, m, d) {
+        // Date.UTC remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            return Date.UTC(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+            return Date.UTC(y, m, d);
+        }
+    }
+
     function startOf (units) {
+        var time;
         units = normalizeUnits(units);
-        // the following switch intentionally omits break keywords
-        // to utilize falling through the cases.
+        if (units === undefined || units === 'millisecond' || !this.isValid()) {
+            return this;
+        }
+
+        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+
         switch (units) {
             case 'year':
-                this.month(0);
-                /* falls through */
+                time = startOfDate(this.year(), 0, 1);
+                break;
             case 'quarter':
+                time = startOfDate(this.year(), this.month() - this.month() % 3, 1);
+                break;
             case 'month':
-                this.date(1);
-                /* falls through */
+                time = startOfDate(this.year(), this.month(), 1);
+                break;
             case 'week':
+                time = startOfDate(this.year(), this.month(), this.date() - this.weekday());
+                break;
             case 'isoWeek':
+                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1));
+                break;
             case 'day':
             case 'date':
-                this.hours(0);
-                /* falls through */
+                time = startOfDate(this.year(), this.month(), this.date());
+                break;
             case 'hour':
-                this.minutes(0);
-                /* falls through */
+                time = this._d.valueOf();
+                time -= mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR);
+                break;
             case 'minute':
-                this.seconds(0);
-                /* falls through */
+                time = this._d.valueOf();
+                time -= mod$1(time, MS_PER_MINUTE);
+                break;
             case 'second':
-                this.milliseconds(0);
+                time = this._d.valueOf();
+                time -= mod$1(time, MS_PER_SECOND);
+                break;
         }
 
-        // weeks are a special case
-        if (units === 'week') {
-            this.weekday(0);
-        }
-        if (units === 'isoWeek') {
-            this.isoWeekday(1);
-        }
-
-        // quarters are also special
-        if (units === 'quarter') {
-            this.month(Math.floor(this.month() / 3) * 3);
-        }
-
+        this._d.setTime(time);
+        hooks.updateOffset(this, true);
         return this;
     }
 
     function endOf (units) {
+        var time;
         units = normalizeUnits(units);
-        if (units === undefined || units === 'millisecond') {
+        if (units === undefined || units === 'millisecond' || !this.isValid()) {
             return this;
         }
 
-        // 'date' is an alias for 'day', so it should be considered as such.
-        if (units === 'date') {
-            units = 'day';
+        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+
+        switch (units) {
+            case 'year':
+                time = startOfDate(this.year() + 1, 0, 1) - 1;
+                break;
+            case 'quarter':
+                time = startOfDate(this.year(), this.month() - this.month() % 3 + 3, 1) - 1;
+                break;
+            case 'month':
+                time = startOfDate(this.year(), this.month() + 1, 1) - 1;
+                break;
+            case 'week':
+                time = startOfDate(this.year(), this.month(), this.date() - this.weekday() + 7) - 1;
+                break;
+            case 'isoWeek':
+                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1) + 7) - 1;
+                break;
+            case 'day':
+            case 'date':
+                time = startOfDate(this.year(), this.month(), this.date() + 1) - 1;
+                break;
+            case 'hour':
+                time = this._d.valueOf();
+                time += MS_PER_HOUR - mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR) - 1;
+                break;
+            case 'minute':
+                time = this._d.valueOf();
+                time += MS_PER_MINUTE - mod$1(time, MS_PER_MINUTE) - 1;
+                break;
+            case 'second':
+                time = this._d.valueOf();
+                time += MS_PER_SECOND - mod$1(time, MS_PER_SECOND) - 1;
+                break;
         }
 
-        return this.startOf(units).add(1, (units === 'isoWeek' ? 'week' : units)).subtract(1, 'ms');
+        this._d.setTime(time);
+        hooks.updateOffset(this, true);
+        return this;
     }
 
     function valueOf () {
@@ -5387,10 +5486,14 @@ if (!Array.prototype.find) {
 
         units = normalizeUnits(units);
 
-        if (units === 'month' || units === 'year') {
-            days   = this._days   + milliseconds / 864e5;
+        if (units === 'month' || units === 'quarter' || units === 'year') {
+            days = this._days + milliseconds / 864e5;
             months = this._months + daysToMonths(days);
-            return units === 'month' ? months : months / 12;
+            switch (units) {
+                case 'month':   return months;
+                case 'quarter': return months / 3;
+                case 'year':    return months / 12;
+            }
         } else {
             // handle milliseconds separately because of floating point math errors (issue #1867)
             days = this._days + Math.round(monthsToDays(this._months));
@@ -5433,6 +5536,7 @@ if (!Array.prototype.find) {
     var asDays         = makeAs('d');
     var asWeeks        = makeAs('w');
     var asMonths       = makeAs('M');
+    var asQuarters     = makeAs('Q');
     var asYears        = makeAs('y');
 
     function clone$1 () {
@@ -5624,6 +5728,7 @@ if (!Array.prototype.find) {
     proto$2.asDays         = asDays;
     proto$2.asWeeks        = asWeeks;
     proto$2.asMonths       = asMonths;
+    proto$2.asQuarters     = asQuarters;
     proto$2.asYears        = asYears;
     proto$2.valueOf        = valueOf$1;
     proto$2._bubble        = bubble;
@@ -5668,7 +5773,7 @@ if (!Array.prototype.find) {
     // Side effect imports
 
 
-    hooks.version = '2.22.1';
+    hooks.version = '2.24.0';
 
     setHookCallback(createLocal);
 
@@ -5709,7 +5814,7 @@ if (!Array.prototype.find) {
         TIME: 'HH:mm',                                  // <input type="time" />
         TIME_SECONDS: 'HH:mm:ss',                       // <input type="time" step="1" />
         TIME_MS: 'HH:mm:ss.SSS',                        // <input type="time" step="0.001" />
-        WEEK: 'YYYY-[W]WW',                             // <input type="week" />
+        WEEK: 'GGGG-[W]WW',                             // <input type="week" />
         MONTH: 'YYYY-MM'                                // <input type="month" />
     };
 
@@ -5717,7 +5822,7 @@ if (!Array.prototype.find) {
 
 })));
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 /*
     Main function and entry point
@@ -5765,7 +5870,7 @@ module.exports = function (videojs) {
 
             var _this = _possibleConstructorReturn(this, (AnnotationComments.__proto__ || Object.getPrototypeOf(AnnotationComments)).call(this, player, options));
 
-            _this.eventDispatcher = new EventDispatcher(_this);
+            _this.eventDispatcher = new EventDispatcher();
             _this.eventDispatcher.registerListenersFor(_this, 'AnnotationComments');
 
             _this.player = player;
@@ -5943,7 +6048,7 @@ module.exports = function (videojs) {
     }(Plugin);
 };
 
-},{"./components/annotation_state":26,"./components/controls":29,"./lib/event_dispatcher":36,"./lib/polyfills":40,"./lib/utils":41}],24:[function(require,module,exports){
+},{"./components/annotation_state":27,"./components/controls":30,"./lib/event_dispatcher":37,"./lib/polyfills":41,"./lib/utils":42}],25:[function(require,module,exports){
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var Handlebars = require("handlebars/runtime");
@@ -6055,7 +6160,7 @@ exports["player_button"] = Handlebars.template({ "compiler": [7, ">= 4.0.0"], "m
         return "<b></b>\n<i class=\"vac-player-icon\">\n	<svg height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\">\n	    <path d=\"M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z\"/>\n	    <path d=\"M0 0h24v24H0z\" fill=\"none\"/>\n	</svg>\n</i>";
     }, "useData": true });
 
-},{"handlebars/runtime":20}],25:[function(require,module,exports){
+},{"handlebars/runtime":20}],26:[function(require,module,exports){
 "use strict";
 /*
     Component for an annotation, which includes controlling the marker/shape, rendering a commentList, etc
@@ -6257,7 +6362,7 @@ module.exports = function (_PlayerUIComponent) {
     return Annotation;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39,"./../lib/utils.js":41,"./comment":27,"./comment_list":28,"./marker":31,"./shape":34}],26:[function(require,module,exports){
+},{"./../lib/player_ui_component":40,"./../lib/utils.js":42,"./comment":28,"./comment_list":29,"./marker":32,"./shape":35}],27:[function(require,module,exports){
 "use strict";
 /*
     Component for managing the state of annotations, including showing active annotation during playback,
@@ -6612,7 +6717,7 @@ module.exports = function (_PlayerComponent) {
     return AnnotationState;
 }(PlayerComponent);
 
-},{"./../lib/player_component":38,"./../lib/utils":41,"./annotation":25}],27:[function(require,module,exports){
+},{"./../lib/player_component":39,"./../lib/utils":42,"./annotation":26}],28:[function(require,module,exports){
 "use strict";
 /*
   Component for an invidual comment
@@ -6722,7 +6827,7 @@ module.exports = function (_PlayerUIComponent) {
     return Comment;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39,"./../lib/utils":41,"moment":22}],28:[function(require,module,exports){
+},{"./../lib/player_ui_component":40,"./../lib/utils":42,"moment":23}],29:[function(require,module,exports){
 "use strict";
 /*
   Component for a list of comments in a visible/active annotation
@@ -6988,7 +7093,7 @@ module.exports = function (_PlayerUIComponent) {
     return CommentList;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39,"./../lib/utils":41,"./comment":27}],29:[function(require,module,exports){
+},{"./../lib/player_ui_component":40,"./../lib/utils":42,"./comment":28}],30:[function(require,module,exports){
 "use strict";
 /*
     Component for managing annotation "control box" in upper left of video when in annotation mode,
@@ -7282,7 +7387,7 @@ module.exports = function (_PlayerUIComponent) {
     return Controls;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39,"./../lib/utils":41,"./annotation":25,"./draggable_marker.js":30,"./player_button":32,"./selectable_shape.js":33}],30:[function(require,module,exports){
+},{"./../lib/player_ui_component":40,"./../lib/utils":42,"./annotation":26,"./draggable_marker.js":31,"./player_button":33,"./selectable_shape.js":34}],31:[function(require,module,exports){
 "use strict";
 /*
     Component for a timeline marker that is draggable when user clicks/drags on it, and rebuilds underlying range
@@ -7431,7 +7536,7 @@ module.exports = function (_Marker) {
     return DraggableMarker;
 }(Marker);
 
-},{"./../lib/utils":41,"./marker":31}],31:[function(require,module,exports){
+},{"./../lib/utils":42,"./marker":32}],32:[function(require,module,exports){
 "use strict";
 /*
     Component for a timeline marker with capabilities to render on timeline, including tooltip for comment
@@ -7556,7 +7661,7 @@ module.exports = function (_PlayerUIComponent) {
     return Marker;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39,"./../lib/utils":41}],32:[function(require,module,exports){
+},{"./../lib/player_ui_component":40,"./../lib/utils":42}],33:[function(require,module,exports){
 "use strict";
 /*
     Component main 'annotation toggle' button in the player controls, including notifier for # annotations
@@ -7629,7 +7734,7 @@ module.exports = function (_PlayerUIComponent) {
     return PlayerButton;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39}],33:[function(require,module,exports){
+},{"./../lib/player_ui_component":40}],34:[function(require,module,exports){
 "use strict";
 /*
     Component for a shape that can be drug/sized on top of the video while adding a new annotation
@@ -7790,7 +7895,7 @@ module.exports = function (_Shape) {
     return SelectableShape;
 }(Shape);
 
-},{"./../lib/utils":41,"./shape":34}],34:[function(require,module,exports){
+},{"./../lib/utils":42,"./shape":35}],35:[function(require,module,exports){
 "use strict";
 /*
     Component for managing a shape (i.e. box drawn on the player) for an annotation
@@ -7852,7 +7957,7 @@ module.exports = function (_PlayerUIComponent) {
     return Shape;
 }(PlayerUIComponent);
 
-},{"./../lib/player_ui_component":39}],35:[function(require,module,exports){
+},{"./../lib/player_ui_component":40}],36:[function(require,module,exports){
 "use strict";
 /*
     Load plugin and register to global videojs
@@ -7863,7 +7968,7 @@ module.exports = function (_PlayerUIComponent) {
     videojs.registerPlugin('annotationComments', AnnotationComments(videojs));
 })(jQuery, window.videojs);
 
-},{"./annotation_comments.js":23}],36:[function(require,module,exports){
+},{"./annotation_comments.js":24}],37:[function(require,module,exports){
 'use strict';
 /*
     Classes for registering and handling custom events for external interaction support.
@@ -7875,6 +7980,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Logger = require("./logger");
+var mitt = require("mitt");
 
 /*
     A centralized collection of event callbacks organized by component and name
@@ -7929,14 +8035,14 @@ var EventRegistry = {
 };
 
 module.exports = function () {
-    function EventDispatcher(plugin) {
+    function EventDispatcher() {
         _classCallCheck(this, EventDispatcher);
 
-        this.plugin = plugin;
         this.pluginReady = false;
         this.pendingEvts = [];
         this.registeredListeners = [];
         this.eventRegistry = EventRegistry;
+        this.eventEmitter = mitt();
     }
 
     // Use the EventRegistry to mass register events on each component initialization
@@ -7963,34 +8069,33 @@ module.exports = function () {
             }
         }
 
-        // Bind a listener to the plugin
+        // Bind a listener
 
     }, {
         key: "registerListener",
         value: function registerListener(type, callback) {
-            this.plugin.on(type, callback);
+            this.eventEmitter.on(type, callback);
             this.registeredListeners.push(type);
         }
 
-        // Unbind a listener from the plugin
+        // Unbind a listener
 
     }, {
         key: "unregisterListener",
         value: function unregisterListener(type) {
-            this.plugin.off(type);
+            this.eventEmitter.off(type);
             var i = this.registeredListeners.indexOf(type);
             this.registeredListeners.splice(i, 1);
         }
 
-        // Trigger an event on the plugin
+        // Trigger an event
 
     }, {
         key: "fire",
         value: function fire(type, data) {
             if (!this.pluginReady) return;
             Logger.log("evt-dispatch-FIRE", type, data);
-            var evt = new CustomEvent(type, { 'detail': data });
-            this.plugin.trigger(evt);
+            this.eventEmitter.emit(type, { detail: data });
         }
     }, {
         key: "teardown",
@@ -8011,7 +8116,7 @@ module.exports = function () {
     return EventDispatcher;
 }();
 
-},{"./logger":37}],37:[function(require,module,exports){
+},{"./logger":38,"mitt":22}],38:[function(require,module,exports){
 'use strict';
 /*
 	General logging library, checking to see if window.VAC_DEBUG is present and true to enable debugging
@@ -8061,7 +8166,7 @@ module.exports.info = function () {
     console.info.apply(null, buildArgs(args));
 };
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 /*
     Base class all player components interit from - it includes lots of helper functions (to get reference to
@@ -8141,7 +8246,7 @@ module.exports = function () {
     return PlayerComponent;
 }();
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 /*
     Base class all player UI components interit from - it includes lots of helper functions (to get reference to
@@ -8283,7 +8388,7 @@ module.exports = function (_PlayerComponent) {
     return PlayerUIComponent;
 }(PlayerComponent);
 
-},{"./../compiled/templates":24,"./../lib/utils":41,"./player_component":38,"handlebars/runtime":20}],40:[function(require,module,exports){
+},{"./../compiled/templates":25,"./../lib/utils":42,"./player_component":39,"handlebars/runtime":20}],41:[function(require,module,exports){
 /*
     Collection of polyfills neededf or IE10+ support
 */
@@ -8373,7 +8478,7 @@ require('es6-object-assign').polyfill();
     window.CustomEvent = CustomEvent;
 })();
 
-},{"es6-object-assign":1,"ie-array-find-polyfill":21}],41:[function(require,module,exports){
+},{"es6-object-assign":1,"ie-array-find-polyfill":21}],42:[function(require,module,exports){
 "use strict";
 /*
     Geneal utility functions, sourced from underscore & scratch built as needed
@@ -8477,6 +8582,6 @@ module.exports = {
     }
 };
 
-},{}]},{},[35])
+},{}]},{},[36])
 
 //# sourceMappingURL=videojs-annotation-comments.js.map
