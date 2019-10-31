@@ -5952,6 +5952,14 @@ module.exports = function (videojs) {
                 this.eventDispatcher.fire(type, data);
             }
 
+            // A wrapper func to make it easier to listen to API events from the client
+
+        }, {
+            key: 'registerListener',
+            value: function registerListener(type, callback) {
+                this.eventDispatcher.registerListener(type, callback, false);
+            }
+
             // Toggle annotations mode on/off
 
         }, {
@@ -8043,6 +8051,9 @@ module.exports = function () {
         this.registeredListeners = [];
         this.eventRegistry = EventRegistry;
         this.eventEmitter = mitt();
+        this.eventEmitter.on('*', function (type, event) {
+            return console.log('CATCHALL', type, event);
+        });
     }
 
     // Use the EventRegistry to mass register events on each component initialization
@@ -8070,12 +8081,16 @@ module.exports = function () {
         }
 
         // Bind a listener
+        // Register internal listeners to make sure callbacks are not duped as modules are reloaded
+        // register = false for consumer usage with more flexibility
 
     }, {
         key: "registerListener",
         value: function registerListener(type, callback) {
+            var register = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
             this.eventEmitter.on(type, callback);
-            this.registeredListeners.push(type);
+            if (register) this.registeredListeners.push(type);
         }
 
         // Unbind a listener
