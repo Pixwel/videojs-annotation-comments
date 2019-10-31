@@ -29,7 +29,7 @@ const PACKAGE = require("./package.json");
 
 //compilation function for browserify/bundler/transpilation
 function compile(watch, cb) {
-  var bundler = {
+  var bundlerDefault = {
     entry: "./src/js/index.js",
     browserifyOptions: { debug: true },
     transformOptions: {},
@@ -49,15 +49,21 @@ function compile(watch, cb) {
     filename: CJSFILENAME
   };
 
-  function rebundle() {
-    for (b of [bundler, bundlerCjs]) {
-      var browserifyStream = browserify(b.entry, b.browserifyOptions).transform(
-        babelify,
-        b.transformOptions
-      );
+  function buildStream(bundler) {
+    return browserify(bundler.entry, bundler.browserifyOptions).transform(
+      babelify,
+      bundler.transformOptions
+    );
+  }
+
+  function rebundle(bundlers) {
+    for (b of bundlers) {
+      var browserifyStream = watch ? watchify(buildStream(b)) : buildStream(b);
 
       browserifyStream
         .bundle()
+        .on("log", gutil.log)
+        .on("error", gutil.log.bind(gutil.colors.red, "Browserify Error"))
         .pipe(source("src/js/index.js"))
         .pipe(buffer())
         .pipe(rename(b.filename))
@@ -68,13 +74,13 @@ function compile(watch, cb) {
   }
 
   if (watch) {
-    rebundle();
-    bundler.processor.on("update", function() {
+    rebundle([bundlerDefault]);
+    buildStream(bundlerDefault).on("update", function() {
       console.log("-> bundling...");
-      rebundle();
+      rebundle([bundlerDefault]);
     });
   } else {
-    rebundle();
+    rebundle([bundlerDefault, bundlerCjs]);
     cb();
   }
 }
