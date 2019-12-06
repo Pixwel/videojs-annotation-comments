@@ -84,7 +84,8 @@ module.exports = class AnnotationState extends PlayerComponent {
             data.shape,
             data.commentStr || "",
             this.plugin,
-            data.id
+            data.id,
+            data.commentId
         )
         this.addNewAnnotation(annotation)
     }

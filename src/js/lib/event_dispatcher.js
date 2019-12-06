@@ -32,7 +32,7 @@ const EventRegistry = {
         },
         newComment: (event, _this) => {
             let annotation = _this.findAnnotation(event.detail.annotationId);
-            if(annotation) annotation.commentList.createComment(event.detail.body);
+            if(annotation) annotation.commentList.createComment(event.detail.body, event.detail.id);
         },
         destroyComment: (event, _this) => {
             let comment = _this.findComment(event.detail.id);

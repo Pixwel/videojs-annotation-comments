@@ -51,7 +51,7 @@ describe('external event-based API', () => {
                 plugin.onReady(() => {
                     player.play().then(() => {
                         let startingLength = plugin.annotationState.annotations.length
-                        plugin.fire('newAnnotation', { id: 1, range: { start: 20, end: null }, commentStr: "yeoooop" });
+                        plugin.fire('newAnnotation', { id: 1, range: { start: 20, end: null }, commentStr: "yeoooop", commentId: '321' });
 
                         expect(plugin.annotationState.annotations.length).to.equal(startingLength + 1)
 
@@ -59,6 +59,7 @@ describe('external event-based API', () => {
                         expect(plugin.annotationState.annotations[0].range["start"]).to.equal(20);
                         expect(plugin.annotationState.annotations[0].range["end"]).to.equal(null);
                         expect(plugin.annotationState.annotations[0].commentList.comments[0].body).to.equal("yeoooop")
+                        expect(plugin.annotationState.annotations[0].commentList.comments[0].id).to.equal("321")
 
                         expect($('.vac-marker:visible').last().hasClass('vac-active')).to.equal(true);
                         done();
@@ -133,10 +134,11 @@ describe('external event-based API', () => {
                         let annotation = plugin.annotationState.annotations[0],
                             commentList = annotation.commentList,
                             startingLength = commentList.comments.length
-                        plugin.fire('newComment', { annotationId: annotation.id, body: 'My new comment' });
+                        plugin.fire('newComment', { annotationId: annotation.id, body: 'My new comment', id: '123' });
 
                         expect(commentList.comments.length).to.equal(startingLength + 1);
                         expect(commentList.comments[commentList.comments.length - 1].body).to.equal('My new comment');
+                        expect(commentList.comments[commentList.comments.length - 1].id).to.equal('123');
 
                         done();
                     });

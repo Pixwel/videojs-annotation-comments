@@ -129,8 +129,8 @@ module.exports = class Annotation extends PlayerUIComponent {
     }
 
     // Build a new annotation instance by passing in data for range, shape, comment, & plugin ref
-    static newFromData (range, shape, commentStr, plugin, id=null) {
-        let comment = Comment.dataObj(commentStr, plugin);
+    static newFromData (range, shape, commentStr, plugin, id=null, commentId=null) {
+        let comment = Comment.dataObj(commentStr, plugin, commentId);
         if(range) range = Utils.parseIntObj(range);
         if(shape) shape = Utils.parseIntObj(shape);
         let data = {

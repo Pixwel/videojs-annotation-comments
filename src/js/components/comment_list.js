@@ -89,8 +89,8 @@ module.exports = class CommentList extends PlayerUIComponent {
         this.createComment(body);
     }
 
-    createComment (body) {
-        let comment = Comment.newFromData(body, this, this.plugin);
+    createComment (body, id) {
+        let comment = Comment.newFromData(body, id, this, this.plugin);
         this.comments.push(comment);
         this.sortComments();
 

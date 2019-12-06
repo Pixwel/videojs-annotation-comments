@@ -176,6 +176,8 @@
 				<input type="hidden" id="new-annotation-shape-x2"></input>
 				<input type="hidden" id="new-annotation-shape-y1"></input>
 				<input type="hidden" id="new-annotation-shape-y2"></input>
+				<label>Comment ID</label>
+				<input id="new-annotation-comment-id"></input>
 				<button id="fire-new-annotation">Save</button>
 			</div>
 
@@ -185,6 +187,8 @@
 				<input id="new-comment-annotation-id"></input>
 				<label>Comment Body</label>
 				<textarea id="new-comment-body"></textarea>
+				<label>Comment ID</label>
+				<input id="new-comment-id"></input>
 				<button id="fire-new-comment">Save</button>
 			</div>
 
@@ -251,7 +255,8 @@
 						y1: $("#new-annotation-shape-y1").val(),
 						y2: $("#new-annotation-shape-y2").val(),
 					},
-					commentStr: $("#new-annotation-comment-body").val()
+					commentStr: $("#new-annotation-comment-body").val(),
+					commentId: $("#new-annotation-comment-id").val()
 				};
 				plugin.fire("newAnnotation", annotation);
 			});
@@ -259,7 +264,8 @@
 			$("#fire-new-comment").on("click", function() {
 				var data = {
 					annotationId: $("#new-comment-annotation-id").val(),
-					body: $("#new-comment-body").val()
+					body: $("#new-comment-body").val(),
+					id: $("#new-comment-id").val(),
 				}
 
 				plugin.fire("newComment", data);
