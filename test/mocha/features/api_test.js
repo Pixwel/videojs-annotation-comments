@@ -155,13 +155,13 @@ describe('external event-based API', () => {
                 plugin.onReady(() => {
                     player.play().then(() => {
                         let annotation = plugin.annotationState.annotations[0];
-												let { commentList } = annotation;
-												plugin.fire('newComment', {
-													annotationId: annotation.id,
-													body: 'My new comment'
-												});
+                        let { commentList } = annotation;
+                        plugin.fire('newComment', {
+                            annotationId: annotation.id,
+                            body: 'My new comment'
+                        });
                         let startingLength = commentList.comments.length;
-												let commentId = commentList.comments[startingLength - 1].id;
+                        let commentId = commentList.comments[startingLength - 1].id;
 												
                         plugin.fire('destroyComment', { id: commentId });
 
