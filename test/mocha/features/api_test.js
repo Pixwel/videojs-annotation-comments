@@ -154,10 +154,15 @@ describe('external event-based API', () => {
 
                 plugin.onReady(() => {
                     player.play().then(() => {
-                        let annotation = plugin.annotationState.annotations[0],
-                            commentList = annotation.commentList,
-                            startingLength = commentList.comments.length,
-                            commentId = commentList.comments[0].id
+                        let annotation = plugin.annotationState.annotations[0];
+												let { commentList } = annotation;
+												plugin.fire('newComment', {
+													annotationId: annotation.id,
+													body: 'My new comment'
+												});
+                        let startingLength = commentList.comments.length;
+												let commentId = commentList.comments[startingLength - 1].id;
+												
                         plugin.fire('destroyComment', { id: commentId });
 
                         expect(commentList.comments.length).to.equal(startingLength - 1);
@@ -178,7 +183,7 @@ describe('external event-based API', () => {
             it('is triggered when plugin state is changed', (done) => {
                 plugin = simplePluginSetup();
 
-                plugin.on('onStateChanged', (event) => {
+                plugin.registerListener('onStateChanged', (event) => {
                     expect(event.detail[0].id).to.equal(2);
                     done();
                 });
@@ -197,7 +202,7 @@ describe('external event-based API', () => {
             it('is triggered when comment is deleted', (done) => {
                 plugin = simplePluginSetup();
 
-                plugin.on('annotationDeleted', (event) => {
+                plugin.registerListener('annotationDeleted', (event) => {
                     expect(event.detail.id).to.equal(2);
                     done();
                 });
@@ -220,7 +225,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('annotationOpened', (event) => {
+                plugin.registerListener('annotationOpened', (event) => {
                     expect(event.detail.triggered_by_timeline).to.equal(false);
                     expect(event.detail.annotation.id).to.equal(1);
                     expect(event.detail.annotation.range.end).to.equal(60);
@@ -243,7 +248,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('annotationOpened', (event) => {
+                plugin.registerListener('annotationOpened', (event) => {
                     expect(event.detail.triggered_by_timeline).to.equal(true);
                     expect(event.detail.annotation.id).to.equal(1);
                     expect(event.detail.annotation.range.end).to.equal(60);
@@ -270,7 +275,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('addingAnnotationDataChanged', (event) => {
+                plugin.registerListener('addingAnnotationDataChanged', (event) => {
                     expect(event.detail.shape).to.not.be.undefined;
                     done();
                 });
@@ -303,7 +308,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('addingAnnotationDataChanged', (event) => {
+                plugin.registerListener('addingAnnotationDataChanged', (event) => {
                     expect(event.detail.range).to.not.be.undefined;
                     done();
                 });
@@ -329,7 +334,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('addingAnnotationDataChanged', (event) => {
+                plugin.registerListener('addingAnnotationDataChanged', (event) => {
                     expect(event.detail.range.start).to.equal(9);
                     expect(event.detail.range.end).to.equal(20);
                     done();
@@ -359,7 +364,7 @@ describe('external event-based API', () => {
                 plugin = simplePluginSetup();
 
                 // Add listener
-                plugin.on('enteredAddingAnnotation', (event) => {
+                plugin.registerListener('enteredAddingAnnotation', (event) => {
                     expect(event.detail.range.start).to.not.be.undefined;
                     done();
                 });

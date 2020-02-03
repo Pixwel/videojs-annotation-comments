@@ -6887,6 +6887,7 @@ module.exports = function (_PlayerUIComponent) {
         value: function newFromData(body, id, commentList, plugin) {
             var commentId = id || Utils.guid();
             var data = this.dataObj(body, plugin, commentId);
+            data.commentList = commentList;
             return new Comment(data, plugin.player);
         }
 
