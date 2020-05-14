@@ -4,7 +4,7 @@
   "description": "A plugin for video.js to add support for timeline moment/range comments and annotations",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/contently/videojs-annotation-comments.git"
+    "url": "git+ssh://git@github.com/Pixwel/videojs-annotation-comments.git"
   },
   "main": "build/videojs-annotation-comments.cjs.js",
   "style": "build/css/annotations.css",
@@ -99,9 +99,9 @@
     "mitt": "^1.2.0"
   },
   "bugs": {
-    "url": "https://github.com/contently/videojs-annotation-comments/issues"
+    "url": "https://github.com/Pixwel/videojs-annotation-comments/issues"
   },
-  "homepage": "https://github.com/contently/videojs-annotation-comments#readme",
+  "homepage": "https://github.com/Pixwel/videojs-annotation-comments#readme",
   "directories": {
     "doc": "docs",
     "test": "test"
