@@ -1,6 +1,6 @@
 {
   "name": "@pixwel/videojs-annotation-comments",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A plugin for video.js to add support for timeline moment/range comments and annotations",
   "repository": {
     "type": "git",
